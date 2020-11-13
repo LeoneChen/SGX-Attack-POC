@@ -3,7 +3,7 @@
 # Intel SGX directory
 SGX_SDK ?= /opt/intel/sgxsdk
 # HW or SW (Hardware or Simulation mode)
-SGX_MODE ?= SW
+SGX_MODE ?= HW
 # x64 or x86
 SGX_ARCH ?= x64
 # DEBUG MODE
