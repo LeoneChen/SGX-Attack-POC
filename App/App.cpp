@@ -37,7 +37,7 @@ void thread1_func(sgx_enclave_id_t eid, const char *dbname) {
     sgx_status_t ret = SGX_ERROR_UNEXPECTED; // status flag for enclave calls
 
     // Open SQLite database
-    cout << std::this_thread::get_id() << "ecall_opendb" << endl;
+    cout << "[" << std::this_thread::get_id() << "] ecall_opendb" << endl;
     ret = ecall_opendb(eid, dbname);
     if (ret != SGX_SUCCESS) {
         cerr << "Error: Making an ecall_open()" << endl;
@@ -52,7 +52,7 @@ void thread1_func(sgx_enclave_id_t eid, const char *dbname) {
             break;
         }
         const char *sql = input.c_str();
-        cout << std::this_thread::get_id() << "ecall_execute_sql" << endl;
+        cout << "[" << std::this_thread::get_id() << "] ecall_execute_sql" << endl;
         ret = ecall_execute_sql(eid, sql);
         if (ret != SGX_SUCCESS) {
             cerr << "Error: Making an ecall_execute_sql()" << endl;
@@ -62,7 +62,7 @@ void thread1_func(sgx_enclave_id_t eid, const char *dbname) {
     }
 
     // Closing SQLite database inside enclave
-    cout << std::this_thread::get_id() << "ecall_closedb" << endl;
+    cout << "[" << std::this_thread::get_id() << "] ecall_closedb" << endl;
     ret = ecall_closedb(eid);
     if (ret != SGX_SUCCESS) {
         cerr << "Error: Making an ecall_closedb()" << endl;
@@ -78,7 +78,7 @@ void thread2_func(sgx_enclave_id_t eid, const char *dbname) {
     sgx_status_t ret = SGX_ERROR_UNEXPECTED; // status flag for enclave calls
 
     // Open SQLite database
-    cout << std::this_thread::get_id() << "ecall_opendb" << endl;
+    cout << "[" << std::this_thread::get_id() << "] ecall_opendb" << endl;
     ret = ecall_opendb(eid, dbname);
     if (ret != SGX_SUCCESS) {
         cerr << "Error: Making an ecall_open()" << endl;
@@ -107,7 +107,7 @@ void thread2_func(sgx_enclave_id_t eid, const char *dbname) {
             break;
         }
         const char *sql = input.c_str();
-        cout << std::this_thread::get_id() << "ecall_execute_sql" << endl;
+        cout << "[" << std::this_thread::get_id() << "] ecall_execute_sql" << endl;
         ret = ecall_execute_sql(eid, sql);
         if (ret != SGX_SUCCESS) {
             cerr << "Error: Making an ecall_execute_sql()" << endl;
@@ -117,7 +117,7 @@ void thread2_func(sgx_enclave_id_t eid, const char *dbname) {
     }
 
     // Closing SQLite database inside enclave
-    cout << std::this_thread::get_id() << "ecall_closedb" << endl;
+    cout << "[" << std::this_thread::get_id() << "] ecall_closedb" << endl;
     ret = ecall_closedb(eid);
     if (ret != SGX_SUCCESS) {
         cerr << "Error: Making an ecall_closedb()" << endl;
