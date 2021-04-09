@@ -44,6 +44,7 @@ void thread1_func(sgx_enclave_id_t eid) {
     sgx_status_t ret = SGX_ERROR_UNEXPECTED;
     std::unique_lock <std::mutex> lk(m);
     PAUSE_THREAD2_1(lk);
+    printf("===Thread1 Running===\n");
     ret = ecall_malloc_obj2_use_obj1(global_eid);
     if (ret == SGX_ERROR_CHECK_POINT) {
         printf("[ecall_malloc_obj2_use_obj1] SGX_ERROR_CHECK_POINT \n");
@@ -52,6 +53,7 @@ void thread1_func(sgx_enclave_id_t eid) {
         printf("Error: Making an ecall_malloc_obj2_use_obj1()\n");
         goto out1;
     }
+    printf("===Thread1 Exit====\n");
     out1:
     PAUSE_THREAD2_2(lk);
 }
