@@ -1,0 +1,3 @@
+ecall_malloc_obj1
+ecall_malloc_obj2_use_obj1
+ecall_free_obj1

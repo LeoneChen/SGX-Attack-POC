@@ -1,0 +1,14 @@
+enclave {
+    from "sgx_printf_dbg.edl" import *; // for printf_dbg usage
+    from "sgx_tstdc.edl" import *; // for thread's operation etc.
+    from "sgx_tprotected_fs.edl" import *; // for check point log file mode
+    trusted {
+        public void ecall_malloc_obj1();
+        public void ecall_malloc_obj2_use_obj1();
+        public void ecall_free_obj1();
+        public void ecall_show_log(void);
+    };
+    untrusted {
+         void ocall_print_string([in, string] const char *str);
+    };
+};
