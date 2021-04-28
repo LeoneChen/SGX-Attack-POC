@@ -32,11 +32,11 @@ void ecall_execute_sql(const char *sql){
     int rc;
     char *zErrMsg = 0;
     rc = sqlite3_exec(db, sql, callback, 0, &zErrMsg);
-    if (rc) {
-        ocall_print_string("SQLite error: ");
-        ocall_println_string(sqlite3_errmsg(db));
-        return;
-    }
+//    if (rc) {
+//        ocall_print_string("SQLite error: ");
+//        ocall_println_string(sqlite3_errmsg(db));
+//        return;
+//    }
 }
 
 void ecall_closedb(){

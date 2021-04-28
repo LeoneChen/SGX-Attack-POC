@@ -17,6 +17,31 @@ std::condition_variable cv;
 bool ready = false;
 bool processed = false;
 
+#define PAUSE_THREAD1                               \
+    do {                                            \
+        {                                           \
+            std::lock_guard <std::mutex> lk(m);     \
+            ready = true;                           \
+        }                                           \
+        cv.notify_one();                            \
+        {                                           \
+            std::unique_lock <std::mutex> lk(m);    \
+            cv.wait(lk, [] { return processed; });  \
+        }                                           \
+    } while(0)
+
+#define PAUSE_THREAD2_1(lk)                         \
+    do {                                            \
+        cv.wait(lk, [] { return ready; });          \
+    } while(0)
+
+#define PAUSE_THREAD2_2(lk)                         \
+    do {                                            \
+        processed = true;                           \
+        lk.unlock();                                \
+        cv.notify_one();                            \
+    } while(0)
+
 // ocalls for printing string (C++ ocalls)
 void ocall_print_error(const char *str) {
     cerr << str << endl;
@@ -30,19 +55,11 @@ void ocall_println_string(const char *str) {
     cout << str << endl;
 }
 
-void thread1_func(sgx_enclave_id_t eid, const char *dbname) {
+void thread2_func(sgx_enclave_id_t eid, const char *dbname) {
     std::unique_lock <std::mutex> lk(m);
-    cv.wait(lk, [] { return ready; });
+    PAUSE_THREAD2_1(lk);
 
     sgx_status_t ret = SGX_ERROR_UNEXPECTED; // status flag for enclave calls
-
-    // Open SQLite database
-    cout << "[" << std::this_thread::get_id() << "] ecall_opendb" << endl;
-    ret = ecall_opendb(eid, dbname);
-    if (ret != SGX_SUCCESS) {
-        cerr << "Error: Making an ecall_open()" << endl;
-        return;
-    }
 
     cout << "Enter SQL statement to execute or 'quit' to exit: " << endl;
     string input;
@@ -61,20 +78,10 @@ void thread1_func(sgx_enclave_id_t eid, const char *dbname) {
         cout << "> ";
     }
 
-    // Closing SQLite database inside enclave
-    cout << "[" << std::this_thread::get_id() << "] ecall_closedb" << endl;
-    ret = ecall_closedb(eid);
-    if (ret != SGX_SUCCESS) {
-        cerr << "Error: Making an ecall_closedb()" << endl;
-        return;
-    }
-
-    processed = true;
-    lk.unlock();
-    cv.notify_one();
+    PAUSE_THREAD2_2(lk);
 }
 
-void thread2_func(sgx_enclave_id_t eid, const char *dbname) {
+void thread1_func(sgx_enclave_id_t eid, const char *dbname) {
     sgx_status_t ret = SGX_ERROR_UNEXPECTED; // status flag for enclave calls
 
     // Open SQLite database
@@ -85,37 +92,6 @@ void thread2_func(sgx_enclave_id_t eid, const char *dbname) {
         return;
     }
 
-    {
-        std::lock_guard <std::mutex> lk(m);
-        ready = true;
-    }
-
-    cv.notify_one();
-
-    // waiting thread1_func end
-    {
-        std::unique_lock <std::mutex> lk(m);
-        cv.wait(lk, [] { return processed; });
-    }
-
-
-    cout << "Enter SQL statement to execute or 'quit' to exit: " << endl;
-    string input;
-    cout << "> ";
-    while (getline(cin, input)) {
-        if (input == "quit") {
-            break;
-        }
-        const char *sql = input.c_str();
-        cout << "[" << std::this_thread::get_id() << "] ecall_execute_sql" << endl;
-        ret = ecall_execute_sql(eid, sql);
-        if (ret != SGX_SUCCESS) {
-            cerr << "Error: Making an ecall_execute_sql()" << endl;
-            return;
-        }
-        cout << "> ";
-    }
-
     // Closing SQLite database inside enclave
     cout << "[" << std::this_thread::get_id() << "] ecall_closedb" << endl;
     ret = ecall_closedb(eid);
@@ -123,15 +99,12 @@ void thread2_func(sgx_enclave_id_t eid, const char *dbname) {
         cerr << "Error: Making an ecall_closedb()" << endl;
         return;
     }
+    PAUSE_THREAD1;
 }
 
 // Application entry
 int main(int argc, char *argv[]) {
-    if (argc != 2) {
-        cout << "Usage: " << argv[0] << " <database>" << endl;
-        return -1;
-    }
-    const char *dbname = argv[1];
+    const char *dbname = (argc != 2) ? "a.db" : argv[1];
 
     sgx_enclave_id_t eid = 0;
     char token_path[MAX_PATH] = {'\0'};
