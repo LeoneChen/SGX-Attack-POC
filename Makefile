@@ -89,7 +89,7 @@ else
 endif
 Crypto_Library_Name := sgx_tcrypto
 
-Enclave_Cpp_Files := Enclave/Enclave.cpp Enclave/sqlite3.c
+Enclave_Cpp_Files := Enclave/Enclave.cpp Enclave/sqlite3.c Enclave/policy_sgx_sef.cpp
 Enclave_Include_Paths := -IEnclave -I$(SGX_SDK)/include -I$(SGX_SDK)/include/tlibc -I$(SGX_SDK)/include/libcxx
 
 Enclave_C_Flags := $(SGX_COMMON_CFLAGS) -nostdinc -fvisibility=hidden -fpie -ffunction-sections -fdata-sections -fstack-protector-strong
@@ -111,7 +111,7 @@ Enclave_Link_Flags := $(SGX_COMMON_CFLAGS) -Wl,--no-undefined -nostdlib -nodefau
 	-Wl,--defsym,__ImageBase=0 -Wl,--gc-sections   \
 	-Wl,--version-script=Enclave/Enclave.lds
 
-Enclave_Cpp_Objects := Enclave/Enclave.o Enclave/sqlite3.o Enclave/ocall_interface.o
+Enclave_Cpp_Objects := Enclave/Enclave.o Enclave/sqlite3.o Enclave/ocall_interface.o Enclave/policy_sgx_sef.o
 
 Enclave_Name := enclave.so
 Signed_Enclave_Name := enclave.signed.so
@@ -174,80 +174,87 @@ endif
 
 # Genereate untrusted brigde routines (Enclave_u.c and Enclave_u.h) using .edl file
 App/Enclave_u.c: $(SGX_EDGER8R) Enclave/Enclave.edl
-	cd App && $(SGX_EDGER8R) --untrusted ../Enclave/Enclave.edl --search-path ../Enclave --search-path $(SGX_SDK)/include
+	@cd App && $(SGX_EDGER8R) --untrusted ../Enclave/Enclave.edl --search-path ../Enclave --search-path $(SGX_SDK)/include
 	@echo "GEN  =>  $@"
 
 # Compile untrusted brigde routines
 App/Enclave_u.o: App/Enclave_u.c
-	$(CC) $(App_C_Flags) -DSGX_UNTRUSTED -c $< -o $@
+	@$(CC) $(App_C_Flags) -DSGX_UNTRUSTED -c $< -o $@
 	@echo "CC   <=  $<"
 
 # Compile ocalls
 App/ocalls.o: App/ocalls.c
-	$(CC) $(App_C_Flags) -c $< -o $@
+	@$(CC) $(App_C_Flags) -c $< -o $@
 	@echo "CC   <=  $<"
 
 # Compile untrusted Application
 App/%.o: App/%.cpp
-	$(CXX) $(App_Cpp_Flags) -c $< -o $@
+	@$(CXX) $(App_Cpp_Flags) -c $< -o $@
 	@echo "CXX  <=  $<"
 
 # Link and generate main Application executable
 $(App_Name): App/Enclave_u.o App/ocalls.o $(App_Cpp_Objects)
-	$(CXX) $^ -o $@ $(App_Link_Flags)
+	@$(CXX) $^ -o $@ $(App_Link_Flags)
 	@echo "LINK =>  $@"
 
 .config_$(Build_Mode)_$(SGX_ARCH):
-	rm -f .config_* $(App_Name) $(Enclave_Name) $(Signed_Enclave_Name) $(App_Cpp_Objects) App/Enclave_u.* $(Enclave_Cpp_Objects) Enclave/Enclave_t.*
+	@rm -f .config_* $(App_Name) $(Enclave_Name) $(Signed_Enclave_Name) $(App_Cpp_Objects) App/Enclave_u.* $(Enclave_Cpp_Objects) Enclave/Enclave_t.*
 	@touch .config_$(Build_Mode)_$(SGX_ARCH)
 
 ######## Enclave Objects ########
 
 # Genereate trusted brigde routines (Enclave_t.c and Enclave_t.h) using .edl file
 Enclave/Enclave_t.c: $(SGX_EDGER8R) Enclave/Enclave.edl
-	cd Enclave && $(SGX_EDGER8R) --trusted ../Enclave/Enclave.edl --search-path ../Enclave --search-path $(SGX_SDK)/include
+	@cd Enclave && $(SGX_EDGER8R) --trusted ../Enclave/Enclave.edl --search-path ../Enclave --search-path $(SGX_SDK)/include
 	@echo "GEN  =>  $@"
+
+Enclave/policy_sgx_sef.cpp: Enclave/Enclave_t.c
+
+# Compile policy
+Enclave/policy_sgx_sef.o: Enclave/policy_sgx_sef.cpp
+	@$(CXX) $(Enclave_Cpp_Flags) -c $< -o $@
+	@echo "CXX  <=  $<"
 
 # Compile trusted brigde routines
 Enclave/Enclave_t.o: Enclave/Enclave_t.c
-	$(CC) $(Enclave_C_Flags) -c $< -o $@
+	@$(CC) $(Enclave_C_Flags) -c $< -o $@
 	@echo "CC   <=  $<"
 
 # Compile trusted Enclave
 Enclave/Enclave.o: Enclave/Enclave.cpp
-	$(CXX) $(Enclave_Cpp_Flags) -c $< -o $@
+	@$(CXX) $(Enclave_Cpp_Flags) -c $< -o $@
 	@echo "CXX  <=  $<"
 
 # Preprocess sqlite3
 Enclave/sqlite3.i: Enclave/sqlite3.c
-	$(CC) -I$(SGX_SDK)/include -DSQLITE_THREADSAFE=0 -E $< -o $@
+	@$(CC) -I$(SGX_SDK)/include -DSQLITE_THREADSAFE=0 -E $< -o $@
 	@echo "CC-Preprocess  <=  $<"
 
 # Compile sqlite3
 Enclave/sqlite3.o: Enclave/sqlite3.i Enclave/sqlite3.c
-	$(CC) $(Enclave_C_Flags) -DSQLITE_THREADSAFE=0 -c $< -o $@
+	@$(CC) $(Enclave_C_Flags) -DSQLITE_THREADSAFE=0 -c $< -o $@
 	@echo "CC  <=  $<"
 
 # Preprocess sqlite3
 Enclave/ocall_interface.i: Enclave/ocall_interface.c
-	$(CC) -I$(SGX_SDK)/include -E $< -o $@
+	@$(CC) -I$(SGX_SDK)/include -E $< -o $@
 	@echo "CC-Preprocess  <=  $<"
 
 # Compile ocall_interface
 Enclave/ocall_interface.o: Enclave/ocall_interface.i Enclave/Enclave_t.c
-	$(CC) $(Enclave_C_Flags) -c $< -o $@
+	@$(CC) $(Enclave_C_Flags) -c $< -o $@
 	@echo "CC  <=  $<"
 
 # Link and generate Enclave shared library/executable
 $(Enclave_Name): Enclave/Enclave_t.o $(Enclave_Cpp_Objects)
-	$(CXX) $^ -o $@ $(Enclave_Link_Flags)
+	@$(CXX) $^ -o $@ $(Enclave_Link_Flags)
 	@echo "LINK =>  $@"
 
 $(Signed_Enclave_Name): $(Enclave_Name)
-	$(SGX_ENCLAVE_SIGNER) sign -key Enclave/Enclave_private.pem -enclave $(Enclave_Name) -out $@ -config $(Enclave_Config_File)
+	@$(SGX_ENCLAVE_SIGNER) sign -key Enclave/Enclave_private.pem -enclave $(Enclave_Name) -out $@ -config $(Enclave_Config_File)
 	@echo "SIGN =>  $@"
 
 .PHONY: clean
 
 clean:
-	rm -f .config_* $(App_Name) $(Enclave_Name) $(Signed_Enclave_Name) $(App_Cpp_Objects) App/Enclave_u.* $(Enclave_Cpp_Objects) Enclave/Enclave_t.* Enclave/sqlite3.i Enclave/ocall_interface.i
+	@rm -f .config_* $(App_Name) $(Enclave_Name) $(Signed_Enclave_Name) $(App_Cpp_Objects) App/Enclave_u.* $(Enclave_Cpp_Objects) Enclave/Enclave_t.* Enclave/sqlite3.i Enclave/ocall_interface.i

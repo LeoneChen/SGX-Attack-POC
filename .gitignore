@@ -16,7 +16,7 @@ Enclave/ocall_interface.o
 Enclave/ocall_interface.i
 Enclave/Enclave_t.*
 
-test.db
+*.db
 test.db-journal
 
 .idea

@@ -1,11 +1,13 @@
 enclave {
     from "sgx_tstdc.edl" import *;
     include "../ocall_types.h" // Need to import some type declartions from stdlib
-
+    from "sgx_printf_dbg.edl" import *; // for printf_dbg usage
+    from "sgx_tprotected_fs.edl" import *; // for check point log file mode
     trusted {
         public void ecall_opendb([in, string] const char *dbname); // open SQLite connection to dbname
         public void ecall_execute_sql([in, string] const char *sql); // Execute SQL statement inside enclave
         public void ecall_closedb(void); // close SQLite db connection
+        public void ecall_show_log(void);
     };
 
     untrusted {
