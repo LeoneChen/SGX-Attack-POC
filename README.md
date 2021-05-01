@@ -1,1 +1,1 @@
-SGX_SQLite Concurrent Calls POC: one of SGX_Attack_POC branches
+SGX_SQLite Call Permutation POC: one of SGX_Attack_POC branches
