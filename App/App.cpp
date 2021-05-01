@@ -120,7 +120,7 @@ int main(int argc, char *argv[]) {
 
     trd.join();
 
-//    ecall_show_log(eid);
+    ecall_show_log(eid);
     out:
     // Destroy the enclave
     sgx_destroy_enclave(eid);
