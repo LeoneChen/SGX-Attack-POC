@@ -67,18 +67,17 @@ void thread_func(sgx_enclave_id_t eid, const char *dbname) {
     string input;
     cout << "> ";
     while (getline(cin, input)) {
-        if (input == "quit") {
-            break;
-        }
+        if (input == "quit") break;
         const char *sql = input.c_str();
         cout << "[TID: " << syscall(SYS_gettid) << "] ecall_execute_sql" << endl;
         ret = ecall_execute_sql(eid, sql);
         if (ret != SGX_SUCCESS) {
             cerr << "[ecall_execute_sql] Error: 0x" << hex << ret << endl;
-            exit(-1);
+            goto out;
         }
         cout << "> ";
     }
+    out:
     PAUSE_THREAD2_2(lk);
 }
 
@@ -95,7 +94,7 @@ int main(int argc, char *argv[]) {
     // Initialize the enclave
     ret = sgx_create_enclave(ENCLAVE_FILENAME, SGX_DEBUG_FLAG, &token, &updated, &eid, NULL);
     if (ret != SGX_SUCCESS) {
-        cerr << "Error: creating enclave" << endl;
+        cerr << "[sgx_create_enclave] Error: 0x" << hex << ret << endl;
         return -1;
     }
     cout << "Info: SQLite SGX enclave successfully created." << endl;
@@ -107,7 +106,7 @@ int main(int argc, char *argv[]) {
     ret = ecall_opendb(eid, dbname);
     if (ret != SGX_SUCCESS) {
         cerr << "[ecall_open] Error: 0x" << hex << ret << endl;
-        return -1;
+        goto out;
     }
     PAUSE_THREAD1;
     // Closing SQLite database inside enclave
@@ -115,18 +114,18 @@ int main(int argc, char *argv[]) {
     ret = ecall_closedb(eid);
     if (ret != SGX_SUCCESS) {
         cerr << "[ecall_closedb] Error: 0x" << hex << ret << endl;
-        return -1;
+        goto out;
     }
 
 
     trd.join();
 
 //    ecall_show_log(eid);
-
+    out:
     // Destroy the enclave
     sgx_destroy_enclave(eid);
     if (ret != SGX_SUCCESS) {
-        cerr << "Error: destroying enclave" << endl;
+        cerr << "[sgx_destroy_enclave]Error: 0x" << hex << ret << endl;
         return -1;
     }
 

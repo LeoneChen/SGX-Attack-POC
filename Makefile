@@ -89,7 +89,8 @@ else
 endif
 Crypto_Library_Name := sgx_tcrypto
 
-Enclave_Cpp_Files := Enclave/Enclave.cpp Enclave/sqlite3.c Enclave/policy_sgx_sef.cpp
+Enclave_Cpp_Files := Enclave/Enclave.cpp Enclave/policy_sef.cpp
+Enclave_C_Files := Enclave/sqlite3.c
 Enclave_Include_Paths := -IEnclave -I$(SGX_SDK)/include -I$(SGX_SDK)/include/tlibc -I$(SGX_SDK)/include/libcxx
 
 Enclave_C_Flags := $(SGX_COMMON_CFLAGS) -nostdinc -fvisibility=hidden -fpie -ffunction-sections -fdata-sections -fstack-protector-strong
@@ -111,7 +112,7 @@ Enclave_Link_Flags := $(SGX_COMMON_CFLAGS) -Wl,--no-undefined -nostdlib -nodefau
 	-Wl,--defsym,__ImageBase=0 -Wl,--gc-sections   \
 	-Wl,--version-script=Enclave/Enclave.lds
 
-Enclave_Cpp_Objects := Enclave/Enclave.o Enclave/sqlite3.o Enclave/ocall_interface.o Enclave/policy_sgx_sef.o
+Enclave_Cpp_Objects := $(Enclave_Cpp_Files:.cpp=.o) $(Enclave_C_Files:.c=.o) Enclave/ocall_interface.o
 
 Enclave_Name := enclave.so
 Signed_Enclave_Name := enclave.signed.so
@@ -208,10 +209,8 @@ Enclave/Enclave_t.c: $(SGX_EDGER8R) Enclave/Enclave.edl
 	@cd Enclave && $(SGX_EDGER8R) --trusted ../Enclave/Enclave.edl --search-path ../Enclave --search-path $(SGX_SDK)/include
 	@echo "GEN  =>  $@"
 
-Enclave/policy_sgx_sef.cpp: Enclave/Enclave_t.c
-
 # Compile policy
-Enclave/policy_sgx_sef.o: Enclave/policy_sgx_sef.cpp
+Enclave/policy_sef.o: Enclave/policy_sef.cpp
 	@$(CXX) $(Enclave_Cpp_Flags) -c $< -o $@
 	@echo "CXX  <=  $<"
 
