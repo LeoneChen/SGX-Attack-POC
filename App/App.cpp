@@ -14,7 +14,7 @@ int main() {
 
     ret = sgx_create_enclave(ENCLAVE_FILENAME, SGX_DEBUG_FLAG, NULL, NULL, &global_eid, NULL);
     if (ret != SGX_SUCCESS) {
-        printf("Error: creating enclave\n");
+        printf("[sgx_create_enclave] Error: 0x%x\n",ret);
         return -1;
     }
 
@@ -36,14 +36,12 @@ int main() {
         goto out;
     }
 
-
-
     ecall_show_log(global_eid);
 
 out:
     ret = sgx_destroy_enclave(global_eid);
     if (ret != SGX_SUCCESS) {
-        printf("Error: destroying enclave\n");
+        printf("[sgx_destroy_enclave] Error: 0x%x\n",ret);
         return -1;
     }
 
