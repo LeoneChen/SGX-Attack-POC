@@ -1,3 +1,2 @@
-SGX-Attack-POC Includes:
-  --Call Permutation POC
-  --Concurrent Calls POC
+Call Permutation POC: one of SGX-Attack-POC Branches
+  

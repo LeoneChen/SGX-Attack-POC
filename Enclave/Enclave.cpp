@@ -40,7 +40,10 @@ void ecall_free_obj1() {
     printf("Free obj%d\n", 1);
 }
 
+bool filter(cp_info_t info) {
+    return (info.interface_type == INTERFACE_ECALL);
+}
 
 void ecall_show_log() {
-    g_check_point->show_log();
+    g_check_point->show_log("Call Permutation", filter);
 }
